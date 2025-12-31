@@ -1,0 +1,114 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Book Notes</title>
+    <link rel="manifest" href="manifest.json">
+    <style>
+        body { font-family: Arial, sans-serif; margin: 20px; }
+        input, textarea { display: block; margin: 10px 0; width: 100%; max-width: 400px; }
+        button { margin: 10px 0; padding: 10px; }
+        #notes-list { margin-top: 20px; }
+        .book-entry { border: 1px solid #ccc; padding: 10px; margin: 10px 0; }
+    </style>
+</head>
+<body>
+    <h1>Book Notes</h1>
+    <label for="book-name">Book Name:</label>
+    <input type="text" id="book-name" placeholder="e.g., The Great Gatsby">
+
+    <label for="book-title">Book Title (optional):</label>
+    <input type="text" id="book-title" placeholder="e.g., F. Scott Fitzgerald">
+
+    <label for="notes">Notes:</label>
+    <textarea id="notes" rows="10" placeholder="Add your notes here..."></textarea>
+
+    <button onclick="saveNotes()">Save Notes</button>
+    <button onclick="loadNotes()">Load Notes</button>
+    <button onclick="downloadCurrentNotes()">Download Current Notes</button>
+    <button onclick="downloadAllNotes()">Download All Notes</button>
+
+    <h2>Saved Books</h2>
+    <div id="notes-list"></div>
+
+    <script>
+        if ('serviceWorker' in navigator) {
+            navigator.serviceWorker.register('sw.js');
+        }
+
+        function saveNotes() {
+            const name = document.getElementById('book-name').value.trim();
+            const title = document.getElementById('book-title').value.trim();
+            const notes = document.getElementById('notes').value.trim();
+            if (!name) {
+                alert('Please enter a book name.');
+                return;
+            }
+            const key = `${name}-${title}`;
+            localStorage.setItem(key, notes);
+            alert('Notes saved!');
+            displaySavedBooks();
+        }
+
+        function loadNotes() {
+            const name = document.getElementById('book-name').value.trim();
+            const title = document.getElementById('book-title').value.trim();
+            const key = `${name}-${title}`;
+            const savedNotes = localStorage.getItem(key);
+            if (savedNotes) {
+                document.getElementById('notes').value = savedNotes;
+                alert('Notes loaded!');
+            } else {
+                alert('No notes found for this book.');
+            }
+        }
+
+        function downloadCurrentNotes() {
+            const name = document.getElementById('book-name').value.trim();
+            const title = document.getElementById('book-title').value.trim();
+            const notes = document.getElementById('notes').value.trim();
+            if (!name || !notes) {
+                alert('Please enter a book name and ensure notes are present.');
+                return;
+            }
+            const filename = `${name}-${title}-notes.txt`;
+            const blob = new Blob([notes], { type: 'text/plain' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = filename;
+            link.click();
+        }
+
+        function downloadAllNotes() {
+            const allNotes = {};
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                allNotes[key] = localStorage.getItem(key);
+            }
+            const json = JSON.stringify(allNotes, null, 2);
+            const blob = new Blob([json], { type: 'application/json' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = 'all_book_notes.json';
+            link.click();
+        }
+
+        function displaySavedBooks() {
+            const list = document.getElementById('notes-list');
+            list.innerHTML = '';
+            for (let i = 0; i < localStorage.length; i++) {
+                const key = localStorage.key(i);
+                const notes = localStorage.getItem(key);
+                const [name, title] = key.split('-');
+                const entry = document.createElement('div');
+                entry.className = 'book-entry';
+                entry.innerHTML = `<strong>${name}</strong> (${title})<br>${notes}`;
+                list.appendChild(entry);
+            }
+        }
+
+        window.onload = displaySavedBooks;
+    </script>
+</body>
+</html>
